@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>학급 알림판</title>
+<style>
+:root{
+  --bg:#e3f1ef; --deep:#0e5b59; --mid:#2a8c88; --ink:#12383a; --soft:#5b8583;
+  --notice:#fff1bf; --notice-b:#e8c94f;
+  --todo:#d4e7fa;   --todo-b:#7fb2e6;
+  --praise:#fbdce8; --praise-b:#e88fb1;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{
+  background:var(--bg); color:var(--ink);
+  font-family:"Pretendard","Noto Sans KR","Malgun Gothic","Apple SD Gothic Neo",sans-serif;
+  font-size:26px; line-height:1.4; min-height:100vh;
+}
+header{background:var(--deep); color:#fff; padding:28px 48px 24px}
+#date{margin:0; font-size:64px; font-weight:800; letter-spacing:-1px}
+#sub{margin:4px 0 0; font-size:26px; color:#bfe4e1}
+main{max-width:1500px; margin:0 auto; padding:32px 48px 64px}
+
+.composer{
+  background:#fff; border:3px solid var(--mid); border-radius:20px;
+  padding:20px 24px; display:flex; flex-wrap:wrap; gap:16px; align-items:center;
+}
+.composer input[type=text]{
+  flex:1 1 420px; font:inherit; font-size:30px; padding:12px 16px;
+  border:2px solid #b7d6d3; border-radius:12px; color:var(--ink); background:#f7fcfb;
+}
+.composer input[type=text]:focus{outline:4px solid #9fd3cf; border-color:var(--mid)}
+.kinds{display:flex; gap:10px; border:0; padding:0; margin:0}
+.kinds label{cursor:pointer}
+.kinds input{position:absolute; opacity:0; pointer-events:none}
+.kinds span{
+  display:inline-block; padding:10px 20px; border-radius:999px; font-weight:700;
+  border:3px solid transparent; font-size:26px;
+}
+.kinds .k-notice span{background:var(--notice)}
+.kinds .k-todo span{background:var(--todo)}
+.kinds .k-praise span{background:var(--praise)}
+.kinds .k-notice input:checked+span{border-color:var(--notice-b)}
+.kinds .k-todo input:checked+span{border-color:var(--todo-b)}
+.kinds .k-praise input:checked+span{border-color:var(--praise-b)}
+.kinds input:focus-visible+span{outline:4px solid #9fd3cf}
+#add{
+  font:inherit; font-size:28px; font-weight:800; color:#fff; background:var(--deep);
+  border:0; border-radius:14px; padding:12px 36px; cursor:pointer;
+}
+#add:hover{background:var(--mid)}
+#add:focus-visible{outline:4px solid #9fd3cf; outline-offset:2px}
+
+#list{
+  list-style:none; margin:32px 0 0; padding:0;
+  display:grid; grid-template-columns:repeat(auto-fill,minmax(440px,1fr)); gap:24px;
+}
+.card{
+  border-radius:20px; padding:24px 26px; border-left:14px solid; display:flex; flex-direction:column; gap:14px;
+}
+.card.notice{background:var(--notice); border-color:var(--notice-b)}
+.card.todo{background:var(--todo); border-color:var(--todo-b)}
+.card.praise{background:var(--praise); border-color:var(--praise-b)}
+.top{display:flex; align-items:center; justify-content:space-between; gap:12px}
+.tag{font-weight:800; font-size:24px}
+.time{font-size:22px; color:var(--soft)}
+.body{display:flex; gap:18px; align-items:flex-start}
+.text{font-size:36px; font-weight:700; line-height:1.35; word-break:keep-all; overflow-wrap:anywhere; flex:1}
+.check{
+  flex:none; width:48px; height:48px; margin-top:4px; accent-color:var(--deep); cursor:pointer;
+}
+.card.done .text{opacity:.4; text-decoration:line-through; text-decoration-thickness:3px}
+.card.done{filter:saturate(.7)}
+.del{
+  align-self:flex-end; font:inherit; font-size:22px; color:var(--ink); background:rgba(255,255,255,.65);
+  border:2px solid rgba(18,56,58,.25); border-radius:10px; padding:6px 18px; cursor:pointer;
+}
+.del:hover{background:#fff}
+.del:focus-visible,.check:focus-visible{outline:4px solid #9fd3cf; outline-offset:2px}
+.empty{grid-column:1/-1; text-align:center; font-size:32px; color:var(--soft); padding:60px 0}
+
+header{position:relative}
+#tvBtn{
+  position:absolute; top:28px; right:48px; font:inherit; font-size:24px; font-weight:700;
+  color:var(--deep); background:#d9f0ee; border:0; border-radius:12px; padding:10px 22px; cursor:pointer;
+}
+#tvBtn:hover{background:#fff}
+#tvBtn:focus-visible{outline:4px solid #9fd3cf; outline-offset:2px}
+
+/* TV 모드 */
+body.tv .composer, body.tv .del{display:none}
+body.tv header{padding:36px 64px 30px}
+body.tv #date{font-size:110px}
+body.tv #sub{font-size:40px}
+body.tv main{max-width:none; padding:40px 64px 64px}
+body.tv #list{margin-top:0; grid-template-columns:repeat(auto-fill,minmax(640px,1fr)); gap:32px}
+body.tv .card{padding:32px 36px; gap:18px}
+body.tv .tag{font-size:40px}
+body.tv .time{font-size:34px}
+body.tv .text{font-size:64px}
+body.tv .check{width:72px; height:72px}
+body.tv .empty{font-size:56px}
+body.tv #tvBtn{opacity:.35; font-size:22px}
+body.tv #tvBtn:hover, body.tv #tvBtn:focus-visible{opacity:1}
+</style>
+</head>
+<body>
+<header>
+  <h1 id="date"></h1>
+  <p id="sub">오늘의 할 일과 알림</p>
+  <button id="tvBtn" type="button" aria-pressed="false">TV 모드</button>
+</header>
+<main>
+  <div class="composer">
+    <input type="text" id="msg" maxlength="120" placeholder="알림 내용을 적어 주세요" autocomplete="off">
+    <fieldset class="kinds" aria-label="알림 종류">
+      <label class="k-notice"><input type="radio" name="kind" value="notice" checked><span>알림</span></label>
+      <label class="k-todo"><input type="radio" name="kind" value="todo"><span>할 일</span></label>
+      <label class="k-praise"><input type="radio" name="kind" value="praise"><span>칭찬</span></label>
+    </fieldset>
+    <button id="add" type="button">추가</button>
+  </div>
+  <ul id="list"></ul>
+</main>
+
+<script>
+(function(){
+  var LABEL = {notice:"알림", todo:"할 일", praise:"칭찬"};
+  var KEY = "classroom-board-v1";
+  var items = [];
+  var $ = function(id){ return document.getElementById(id); };
+
+  function load(){
+    try{ var raw = localStorage.getItem(KEY); if(raw) items = JSON.parse(raw) || []; }catch(e){ items = []; }
+  }
+  function save(){
+    try{ localStorage.setItem(KEY, JSON.stringify(items)); }catch(e){}
+  }
+
+  function showDate(){
+    $("date").textContent = new Date().toLocaleDateString("ko-KR",
+      {month:"long", day:"numeric", weekday:"long"});
+  }
+
+  function fmtTime(ts){
+    var d = new Date(ts), now = new Date();
+    var t = d.toLocaleTimeString("ko-KR",{hour:"numeric", minute:"2-digit"});
+    if(d.toDateString() === now.toDateString()) return t;
+    return d.toLocaleDateString("ko-KR",{month:"long", day:"numeric"}) + " " + t;
+  }
+
+  function render(){
+    var ul = $("list");
+    ul.textContent = "";
+    if(!items.length){
+      var e = document.createElement("li");
+      e.className = "empty";
+      e.textContent = document.body.classList.contains("tv")
+        ? "오늘은 등록된 알림이 없어요."
+        : "아직 알림이 없어요. 내용을 적고 추가를 눌러 보세요.";
+      ul.appendChild(e);
+      return;
+    }
+    items.slice().sort(function(a,b){ return b.id - a.id; }).forEach(function(it){
+      var li = document.createElement("li");
+      li.className = "card " + it.kind + (it.done ? " done" : "");
+
+      var top = document.createElement("div"); top.className = "top";
+      var tag = document.createElement("span"); tag.className = "tag"; tag.textContent = LABEL[it.kind];
+      var tm = document.createElement("span"); tm.className = "time"; tm.textContent = fmtTime(it.id);
+      top.appendChild(tag); top.appendChild(tm);
+
+      var body = document.createElement("div"); body.className = "body";
+      var cb = document.createElement("input");
+      cb.type = "checkbox"; cb.className = "check"; cb.checked = !!it.done;
+      cb.setAttribute("aria-label", "완료");
+      cb.addEventListener("change", function(){ it.done = cb.checked; save(); render(); });
+      var tx = document.createElement("div"); tx.className = "text"; tx.textContent = it.text;
+      body.appendChild(cb); body.appendChild(tx);
+
+      var del = document.createElement("button");
+      del.type = "button"; del.className = "del"; del.textContent = "삭제";
+      del.addEventListener("click", function(){
+        items = items.filter(function(x){ return x.id !== it.id; }); save(); render();
+      });
+
+      li.appendChild(top); li.appendChild(body); li.appendChild(del);
+      ul.appendChild(li);
+    });
+  }
+
+  function add(){
+    var input = $("msg");
+    var text = input.value.trim();
+    if(!text){ input.focus(); return; }
+    var kind = document.querySelector('input[name="kind"]:checked').value;
+    var id = Date.now();
+    if(items.some(function(x){ return x.id === id; })) id += 1;
+    items.push({id:id, kind:kind, text:text, done:false});
+    save();
+    input.value = "";
+    input.focus();
+    render();
+  }
+
+  $("add").addEventListener("click", add);
+
+  // 한글 조합(IME) 중의 Enter는 무시해서 중복 추가를 막는다
+  var composing = false;
+  $("msg").addEventListener("compositionstart", function(){ composing = true; });
+  $("msg").addEventListener("compositionend", function(){ composing = false; });
+  $("msg").addEventListener("keydown", function(e){
+    if(e.key !== "Enter") return;
+    if(e.isComposing || composing || e.keyCode === 229) return;
+    e.preventDefault();
+    add();
+  });
+
+  // TV 모드: 입력창을 숨기고 글씨를 키운다. Esc로 해제.
+  function setTv(on){
+    document.body.classList.toggle("tv", on);
+    var b = $("tvBtn");
+    b.textContent = on ? "TV 모드 끄기" : "TV 모드";
+    b.setAttribute("aria-pressed", on ? "true" : "false");
+    try{
+      if(on && document.documentElement.requestFullscreen && !document.fullscreenElement){
+        var p = document.documentElement.requestFullscreen();
+        if(p && p.catch) p.catch(function(){});
+      }else if(!on && document.fullscreenElement){
+        document.exitFullscreen();
+      }
+    }catch(e){}
+    render();
+  }
+  $("tvBtn").addEventListener("click", function(){
+    setTv(!document.body.classList.contains("tv"));
+  });
+  document.addEventListener("keydown", function(e){
+    if(e.key === "Escape" && document.body.classList.contains("tv")) setTv(false);
+  });
+  document.addEventListener("fullscreenchange", function(){
+    if(!document.fullscreenElement && document.body.classList.contains("tv")) setTv(false);
+  });
+
+  load(); showDate(); render();
+  setInterval(showDate, 60000);
+})();
+</script>
+</body>
+</html>
